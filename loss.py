@@ -32,8 +32,6 @@ def cla_loss(view1_predict, labels_1):
 
 
 
-
-
 def mdl_loss(view1_feature, view2_feature, labels_1, labels_2):
     cos = lambda x, y: x.mm(y.t()) / (
         (x ** 2).sum(1, keepdim=True).sqrt().mm((y ** 2).sum(1, keepdim=True).sqrt().t())).clamp(min=1e-6) / 2.
@@ -56,38 +54,6 @@ def calc_hammingDist(B1, B2):
     distH = 0.5 * (q - B1.mm(B2.transpose(0, 1)))
     return distH
 
-'''def soft_con_loss(view1_feature, view2_feature, labels, t=0.21, gamma=0.13):
-    view1_feature = F.normalize(view1_feature, dim=1)
-    view2_feature = F.normalize(view2_feature, dim=1)
-    # cosine similarity: NxN（余弦相似性）
-    sim_view12 = torch.matmul(view1_feature, view2_feature.T) / t#两个张量的乘积，这里把两个标签，如果两输入的量为一维则进行点乘，二维就是矩阵相乘
-    sim_view11 = torch.matmul(view1_feature, view1_feature.T) / t
-    sim_view22 = torch.matmul(view2_feature, view2_feature.T) / t
-    #label_L1 = labels.sum(1)
-    #label_sim = torch.matmul(labels, labels.T) / (label_L1[None, :] + label_L1[:, None] - torch.matmul(labels, labels.T))
-    label_sim = torch.matmul(labels, labels.T).clamp(max=1.0)
-    #label_sim = label_sim ** 0.5
-    pro_inter = label_sim / label_sim.sum(1, keepdim=True).clamp(min=1e-6)
-    label_sim_intra = (label_sim - torch.eye(label_sim.shape[0]).cuda()).clamp(min=0)
-    pro_intra = label_sim_intra / label_sim_intra.sum(1, keepdim=True).clamp(min=1e-6)
-
-    # logits: NxN
-    logits_view12 = sim_view12 - torch.log(torch.exp(1.06 * sim_view12).sum(1, keepdim=True))
-    logits_view21 = sim_view12.T - torch.log(torch.exp(1.06 * sim_view12.T).sum(1, keepdim=True))
-    logits_view11 = sim_view11 - torch.log(torch.exp(1.06 * sim_view11).sum(1, keepdim=True))
-    logits_view22 = sim_view22 - torch.log(torch.exp(1.06 * sim_view22).sum(1, keepdim=True))
-
-    # compute mean of log-likelihood over positive
-    mean_log_prob_pos_view12 = (pro_inter * logits_view12).sum(1)
-    mean_log_prob_pos_view21 = (pro_inter * logits_view21).sum(1)
-    mean_log_prob_pos_view11 = (pro_intra * logits_view11).sum(1)
-    mean_log_prob_pos_view22 = (pro_intra * logits_view22).sum(1)
-
-    # supervised cross-modal contrastive loss
-    loss = - mean_log_prob_pos_view12.mean() - mean_log_prob_pos_view21.mean() \
-           - gamma * (mean_log_prob_pos_view11.mean() + mean_log_prob_pos_view22.mean())
-
-    return loss'''
 
 
 
@@ -137,61 +103,6 @@ def calc_loss(B, F, G, Sim, gamma, eta):
     return loss
 
 
-
-'''class TripletHardLoss(nn.Module):
-    def __init__(self, dis_metric='euclidean', squared=False, reduction='mean'):
-        """
-        Build the triplet loss over a batch of embeddings.
-        For each anchor, we get the hardest positive and hardest negative to form a triplet.
-        :param margin:
-        :param dis_metric: 'euclidean' or 'dp'(dot product)
-        :param squared:
-        :param reduction: 'mean' or 'sum' or 'none'
-        """
-        super(TripletHardLoss, self).__init__()
-
-        self.dis_metric = dis_metric
-        self.reduction = reduction
-        self.squared = squared
-
-    def forward(self, source, s_labels, target=None, t_labels=None, margin=0):
-        if target is None:
-            target = source
-        if t_labels is None:
-            t_labels = s_labels
-
-
-        pairwise_dist = cos_distance(source, target)
-
-        # First, we need to get a mask for every valid positive (they should have same label)
-        # and every valid negative (they should have different labels)
-        mask_anchor_positive, mask_anchor_negative = _get_anchor_triplet_mask(s_labels, t_labels)
-
-        # For each anchor, get the hardest positive
-        # We put to 0 any element where (a, p) is not valid (valid if a != p and label(a) == label(p))
-        anchor_positive_dist = mask_anchor_positive * pairwise_dist
-
-        # shape (batch_size, 1)
-        hardest_positive_dist, _ = anchor_positive_dist.max(dim=1, keepdim=True)
-
-        # For each anchor, get the hardest negative
-        # We add the maximum value in each row to the invalid negatives (label(a) == label(n))
-        max_anchor_negative_dist, _ = pairwise_dist.max(dim=1, keepdim=True)
-        anchor_negative_dist = pairwise_dist + max_anchor_negative_dist * (1.0 - mask_anchor_negative)
-
-        # shape (batch_size,)
-        hardest_negative_dist, _ = anchor_negative_dist.min(dim=1, keepdim=True)
-
-        # Combine biggest d(a, p) and smallest d(a, n) into final triplet loss
-        triplet_loss = torch.clamp(hardest_positive_dist - hardest_negative_dist + margin, 0.0)
-
-        # Get final mean triplet loss
-        if self.reduction is 'mean':
-            triplet_loss = triplet_loss.mean()
-        elif self.reduction is 'sum':
-            triplet_loss = triplet_loss.sum()
-
-        return triplet_loss'''
 
 
 
